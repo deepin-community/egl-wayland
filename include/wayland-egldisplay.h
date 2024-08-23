@@ -23,6 +23,7 @@
 #ifndef WAYLAND_EGLDISPLAY_H
 #define WAYLAND_EGLDISPLAY_H
 
+#include <sys/types.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <wayland-client.h>
@@ -39,14 +40,91 @@ extern "C" {
    when the attach_eglstream_consumer_attrib() request was first available" */
 #define WL_EGLSTREAM_CONTROLLER_ATTACH_EGLSTREAM_CONSUMER_ATTRIB_SINCE 2
 
+/*
+ * Our representation of a dmabuf format. It has a drm_fourcc.h code
+ * and a collection of modifiers that are supported.
+ */
 typedef struct WlEglDmaBufFormatRec {
     uint32_t format;
     uint32_t numModifiers;
     uint64_t *modifiers;
 } WlEglDmaBufFormat;
 
+/*
+ * This is a helper struct for a collection of dmabuf formats. We have
+ * a couple areas of the code that want to manage sets of formats and
+ * this allows us to share code.
+ */
+typedef struct WlEglDmaBufFormatSetRec {
+    uint32_t numFormats;
+    WlEglDmaBufFormat *dmaBufFormats;
+} WlEglDmaBufFormatSet;
+
+/*
+ * Container for all formats supported by a device. A "tranche" is
+ * really just a set of formats and modifiers supported by a device
+ * with a certain set of flags (really just a scanout flag).
+ */
+typedef struct WlEglDmaBufTrancheRec {
+    dev_t drmDev;
+    int supportsScanout;
+    WlEglDmaBufFormatSet formatSet;
+} WlEglDmaBufTranche;
+
+/*
+ * This is one item in the format table that the compositor sent
+ * us.
+ */
+typedef struct WlEglDmaBufFormatTableEntryRec{
+    uint32_t format;
+    uint32_t pad;
+    uint64_t modifier;
+} WlEglDmaBufFormatTableEntry;
+
+/*
+ * In linux_dmabuf_feedback.format_table the compositor will advertise all
+ * (format, modifier) pairs that it supports importing buffers with. We
+ * the client mmap this format table and refer to it during the tranche
+ * events to construct WlEglDmaBufFormatSets that the compositor
+ * supports.
+ */
+typedef struct WlEglDmaBufFormatTableRec {
+    int len;
+    /* This is mmapped from the fd given to us by the compositor */
+    WlEglDmaBufFormatTableEntry *entry;
+} WlEglDmaBufFormatTable;
+
+/*
+ * A dmabuf feedback object. This will record all tranches sent by the
+ * compositor. It can be used either for per-surface feedback or for
+ * the default feedback for any surface.
+ */
+typedef struct WlEglDmaBufFeedbackRec {
+    struct zwp_linux_dmabuf_feedback_v1 *wlDmaBufFeedback;
+    int numTranches;
+    WlEglDmaBufTranche *tranches;
+    WlEglDmaBufFormatTable formatTable;
+    dev_t mainDev;
+    /*
+     * This will be filled in during wl events and copied to
+     * dev_formats on dmabuf_feedback.tranche_done
+     */
+    WlEglDmaBufTranche tmpTranche;
+    int feedbackDone;
+    /*
+     * This will be set to true if the compositor notified us of new
+     * modifiers but we haven't reallocated our surface yet.
+     */
+    int unprocessedFeedback;
+} WlEglDmaBufFeedback;
+
 typedef struct WlEglDisplayRec {
     WlEglDeviceDpy *devDpy;
+
+    /* Supports EGL_ANDROID_native_fence_sync */
+    int supports_native_fence_sync;
+    /* Underlying driver version is recent enough for explicit sync */
+    int supports_explicit_sync;
 
     EGLBoolean         ownNativeDpy;
     struct wl_display *nativeDpy;
@@ -55,7 +133,9 @@ typedef struct WlEglDisplayRec {
     struct wl_eglstream_display    *wlStreamDpy;
     struct wl_eglstream_controller *wlStreamCtl;
     struct zwp_linux_dmabuf_v1     *wlDmaBuf;
+    struct wp_linux_drm_syncobj_manager_v1 *wlDrmSyncobj;
     unsigned int                    wlStreamCtlVer;
+    struct wp_presentation         *wpPresentation;
     struct wl_event_queue          *wlEventQueue;
     struct {
         unsigned int stream_fd     : 1;
@@ -65,7 +145,11 @@ typedef struct WlEglDisplayRec {
 
     WlEglPlatformData *data;
 
+    /* DRM device in use */
+    int drmFd;
+
     EGLBoolean useInitRefCount;
+    EGLDeviceEXT requestedDevice;
 
     /**
      * The number of times that eglTerminate has to be called before the
@@ -89,8 +173,15 @@ typedef struct WlEglDisplayRec {
 
     struct wl_list link;
 
-    WlEglDmaBufFormat *dmaBufFormats;
-    uint32_t numFormats;
+    /* The formats given to us by the linux_dmabuf.modifiers event */
+    WlEglDmaBufFormatSet formatSet;
+
+    /* The linux_dmabuf protocol version in use. Will be >= 3 */
+    unsigned int dmaBufProtocolVersion;
+
+    WlEglDmaBufFeedback defaultFeedback;
+
+    EGLBoolean primeRenderOffload;
 } WlEglDisplay;
 
 typedef struct WlEventQueueRec {
@@ -103,6 +194,8 @@ typedef struct WlEventQueueRec {
     struct wl_list threadLink;
 } WlEventQueue;
 
+int WlEglRegisterFeedback(WlEglDmaBufFeedback *feedback);
+void wlEglDestroyFeedback(WlEglDmaBufFeedback *feedback);
 EGLBoolean wlEglIsValidNativeDisplayExport(void *data, void *nativeDpy);
 EGLBoolean wlEglBindDisplaysHook(void *data, EGLDisplay dpy, void *nativeDpy);
 EGLBoolean wlEglUnbindDisplaysHook(EGLDisplay dpy, void *nativeDpy);

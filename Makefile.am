@@ -14,6 +14,7 @@ libnvidia_egl_wayland_la_CFLAGS +=      \
     $(PTHREAD_CFLAGS)                   \
     $(EGL_EXTERNAL_PLATFORM_CFLAGS)     \
     $(WAYLAND_CFLAGS)                   \
+    $(LIBDRM_CFLAGS)                    \
     $(COMPILER_FLAG_VISIBILITY_HIDDEN)
 
 # Make sure we don't use deprecated stuff
@@ -23,7 +24,9 @@ libnvidia_egl_wayland_la_CFLAGS += \
 libnvidia_egl_wayland_la_LDFLAGS =                                                                                        \
     -shared                                                                                                               \
     -Wl,-Bsymbolic                                                                                                        \
+    -ldl                                                                                                                  \
     $(WAYLAND_LIBS)                                                                                                       \
+    $(LIBDRM_LIBS)                                                                                                        \
     -version-number $(WAYLAND_EXTERNAL_MAJOR_VERSION):$(WAYLAND_EXTERNAL_MINOR_VERSION):$(WAYLAND_EXTERNAL_MICRO_VERSION) \
     $(LINKER_FLAG_NO_UNDEFINED)
 
@@ -40,6 +43,21 @@ libnvidia_egl_wayland_la_SOURCES =                            \
     src/wayland-drm.c                                         \
     src/wayland-external-exports.c
 
+libnvidia_egl_wayland_la_SOURCES += \
+    include/wayland-drm.h                 \
+    include/wayland-egldevice.h           \
+    include/wayland-egldisplay.h          \
+    include/wayland-eglhandle.h           \
+    include/wayland-eglstream.h           \
+    include/wayland-eglstream-server.h    \
+    include/wayland-eglsurface.h          \
+    include/wayland-eglsurface-internal.h \
+    include/wayland-eglswap.h             \
+    include/wayland-eglutils.h            \
+    include/wayland-external-exports.h    \
+    include/wayland-thread.h              \
+    wayland-egl/wayland-egl-ext.h
+
 libnvidia_egl_wayland_la_built_public_protocols =             \
     wayland-eglstream/wayland-eglstream-controller-protocol.c \
     wayland-drm/wayland-drm-protocol.c
@@ -49,7 +67,8 @@ libnvidia_egl_wayland_la_built_private_protocols =            \
 
 libnvidia_egl_wayland_la_built_client_headers =               \
     wayland-eglstream/wayland-eglstream-client-protocol.h     \
-    wayland-eglstream/wayland-eglstream-controller-client-protocol.h
+    wayland-eglstream/wayland-eglstream-controller-client-protocol.h \
+    wayland-drm/wayland-drm-client-protocol.h
 
 libnvidia_egl_wayland_la_built_server_headers =               \
     wayland-eglstream/wayland-eglstream-server-protocol.h     \
@@ -61,13 +80,29 @@ libnvidia_egl_wayland_la_dmabuf_built_client_headers =        \
 libnvidia_egl_wayland_la_dmabuf_built_private_protocols =     \
     linux-dmabuf-unstable-v1-protocol.c
 
-libnvidia_egl_wayland_la_built_sources =                      \
-    $(libnvidia_egl_wayland_la_built_public_protocols)        \
-    $(libnvidia_egl_wayland_la_built_private_protocols)       \
-    $(libnvidia_egl_wayland_la_built_client_headers)          \
-    $(libnvidia_egl_wayland_la_built_server_headers)          \
-    $(libnvidia_egl_wayland_la_dmabuf_built_client_headers)   \
-    $(libnvidia_egl_wayland_la_dmabuf_built_private_protocols)
+libnvidia_egl_wayland_la_drm_syncobj_built_client_headers =       \
+    linux-drm-syncobj-v1-client-protocol.h
+
+libnvidia_egl_wayland_la_drm_syncobj_built_private_protocols =    \
+    linux-drm-syncobj-v1-protocol.c
+
+libnvidia_egl_wayland_la_presentation_time_built_client_headers = \
+    presentation-time-client-protocol.h
+
+libnvidia_egl_wayland_la_presentation_time_private_protocols =    \
+    presentation-time-protocol.c
+
+libnvidia_egl_wayland_la_built_sources =                               \
+    $(libnvidia_egl_wayland_la_built_public_protocols)                 \
+    $(libnvidia_egl_wayland_la_built_private_protocols)                \
+    $(libnvidia_egl_wayland_la_built_client_headers)                   \
+    $(libnvidia_egl_wayland_la_built_server_headers)                   \
+    $(libnvidia_egl_wayland_la_dmabuf_built_client_headers)            \
+    $(libnvidia_egl_wayland_la_dmabuf_built_private_protocols)         \
+    $(libnvidia_egl_wayland_la_drm_syncobj_built_client_headers)       \
+    $(libnvidia_egl_wayland_la_drm_syncobj_built_private_protocols)    \
+    $(libnvidia_egl_wayland_la_presentation_time_built_client_headers) \
+    $(libnvidia_egl_wayland_la_presentation_time_private_protocols)
 
 nodist_libnvidia_egl_wayland_la_SOURCES = $(libnvidia_egl_wayland_la_built_sources)
 
@@ -100,6 +135,18 @@ $(libnvidia_egl_wayland_la_dmabuf_built_private_protocols):%-protocol.c : $(WAYL
 	$(AM_V_GEN)$(WAYLAND_SCANNER) $(WAYLAND_PRIVATE_CODEGEN) < $< > $@
 
 $(libnvidia_egl_wayland_la_dmabuf_built_client_headers):%-client-protocol.h : $(WAYLAND_PROTOCOLS_DATADIR)/unstable/linux-dmabuf/%.xml
+	$(AM_V_GEN)$(WAYLAND_SCANNER) client-header < $< > $@
+
+$(libnvidia_egl_wayland_la_drm_syncobj_built_private_protocols):%-protocol.c : $(WAYLAND_PROTOCOLS_DATADIR)/staging/linux-drm-syncobj/%.xml
+	$(AM_V_GEN)$(WAYLAND_SCANNER) $(WAYLAND_PRIVATE_CODEGEN) < $< > $@
+
+$(libnvidia_egl_wayland_la_drm_syncobj_built_client_headers):%-client-protocol.h : $(WAYLAND_PROTOCOLS_DATADIR)/staging/linux-drm-syncobj/%.xml
+	$(AM_V_GEN)$(WAYLAND_SCANNER) client-header < $< > $@
+
+$(libnvidia_egl_wayland_la_presentation_time_private_protocols):%-protocol.c : $(WAYLAND_PROTOCOLS_DATADIR)/stable/presentation-time/%.xml
+	$(AM_V_GEN)$(WAYLAND_SCANNER) $(WAYLAND_PRIVATE_CODEGEN) < $< > $@
+
+$(libnvidia_egl_wayland_la_presentation_time_built_client_headers):%-client-protocol.h : $(WAYLAND_PROTOCOLS_DATADIR)/stable/presentation-time/%.xml
 	$(AM_V_GEN)$(WAYLAND_SCANNER) client-header < $< > $@
 
 $(libnvidia_egl_wayland_la_built_public_protocols):%-protocol.c : %.xml

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2014-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -22,7 +22,7 @@
 
 #include "wayland-eglhandle.h"
 #include "wayland-egldisplay.h"
-#include "wayland-eglsurface.h"
+#include "wayland-eglsurface-internal.h"
 #include "wayland-thread.h"
 #include <stdlib.h>
 #include <errno.h>
@@ -72,6 +72,7 @@ wlEglCreatePlatformData(int apiMajor, int apiMinor, const EGLExtDriver *driver)
     GET_PROC(terminate,                   eglTerminate);
     GET_PROC(chooseConfig,                eglChooseConfig);
     GET_PROC(getConfigAttrib,             eglGetConfigAttrib);
+    GET_PROC(querySurface,                eglQuerySurface);
 
     GET_PROC(getCurrentContext,           eglGetCurrentContext);
     GET_PROC(getCurrentSurface,           eglGetCurrentSurface);
@@ -110,6 +111,8 @@ wlEglCreatePlatformData(int apiMajor, int apiMinor, const EGLExtDriver *driver)
     GET_PROC(clientWaitSync,              eglClientWaitSyncKHR);
     GET_PROC(signalSync,                  eglSignalSyncKHR);
     GET_PROC(destroySync,                 eglDestroySyncKHR);
+    GET_PROC(createSync,                  eglCreateSyncKHR);
+    GET_PROC(dupNativeFenceFD,            eglDupNativeFenceFDANDROID);
 
     /* Stream flush */
     GET_PROC(streamFlush,                 eglStreamFlushNV);
