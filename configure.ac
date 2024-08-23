@@ -2,7 +2,7 @@ AC_PREREQ([2.64])
 
 m4_define([wayland_eglstream_major_version], [1])
 m4_define([wayland_eglstream_minor_version], [1])
-m4_define([wayland_eglstream_micro_version], [9])
+m4_define([wayland_eglstream_micro_version], [15])
 m4_define([wayland_eglstream_version],
           [wayland_eglstream_major_version.wayland_eglstream_minor_version.wayland_eglstream_micro_version])
 
@@ -14,6 +14,8 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
+
+AC_GNU_SOURCE
 
 AC_SUBST([WAYLAND_EXTERNAL_MAJOR_VERSION], [wayland_eglstream_major_version])
 AC_SUBST([WAYLAND_EXTERNAL_MINOR_VERSION], [wayland_eglstream_minor_version])
@@ -61,8 +63,12 @@ LT_INIT
 
 # Checks for libraries.
 AX_PTHREAD()
+AC_CHECK_LIB([dl], [dlsym],
+             [],
+             [AC_MSG_ERROR("dlsym is needed to compile wayland-egldisplay")])
 PKG_CHECK_MODULES([EGL_EXTERNAL_PLATFORM], [eglexternalplatform >= ${EGL_EXTERNAL_PLATFORM_MIN_VERSION} eglexternalplatform < ${EGL_EXTERNAL_PLATFORM_MAX_VERSION}])
 PKG_CHECK_MODULES([WAYLAND], [wayland-server wayland-client wayland-egl-backend >= 3])
+PKG_CHECK_MODULES([LIBDRM], [libdrm])
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h stddef.h stdint.h stdlib.h string.h sys/socket.h unistd.h])

@@ -76,6 +76,7 @@ typedef struct WlEglPlatformDataRec {
         PWLEGLFNTERMINATECOREPROC                   terminate;
         PWLEGLFNCHOOSECONFIGCOREPROC                chooseConfig;
         PWLEGLFNGETCONFIGATTRIBCOREPROC             getConfigAttrib;
+        PFNEGLQUERYSURFACEPROC                      querySurface;
 
         PWLEGLFNGETCURRENTCONTEXTCOREPROC           getCurrentContext;
         PWLEGLFNGETCURRENTSURFACECOREPROC           getCurrentSurface;
@@ -107,7 +108,9 @@ typedef struct WlEglPlatformDataRec {
         PFNEGLCLIENTWAITSYNCKHRPROC                 clientWaitSync;
         PFNEGLSIGNALSYNCKHRPROC                     signalSync;
         PFNEGLDESTROYSYNCKHRPROC                    destroySync;
+        PFNEGLCREATESYNCKHRPROC                     createSync;
         PFNEGLSTREAMFLUSHNVPROC                     streamFlush;
+        PFNEGLDUPNATIVEFENCEFDANDROIDPROC           dupNativeFenceFD;
 
         /* Used for dma-buf surfaces */
         PFNEGLSTREAMIMAGECONSUMERCONNECTNVPROC      streamImageConsumerConnect;

@@ -1,7 +1,14 @@
+if not cc.has_function('dlsym')
+    libdl = cc.find_library('dl')
+else
+    libdl = []
+endif
+
 add_project_arguments('-Wall', language : 'c')
 add_project_arguments('-Werror', language : 'c')
 add_project_arguments('-fvisibility=hidden', language : 'c')
 add_project_arguments('-DWL_HIDE_DEPRECATED', language : 'c')
+add_project_arguments('-D_GNU_SOURCE', language : 'c')
 add_project_link_arguments('-Wl,-Bsymbolic', language : 'c')
 
 if cc.has_argument('-Wpedantic')
@@ -9,8 +16,11 @@ if cc.has_argument('-Wpedantic')
 endif
 
 wl_protos = dependency('wayland-protocols', version: '>= 1.8')
+libdrm = dependency('libdrm')
 wl_protos_dir = wl_protos.get_pkgconfig_variable('pkgdatadir')
 wl_dmabuf_xml = join_paths(wl_protos_dir, 'unstable', 'linux-dmabuf', 'linux-dmabuf-unstable-v1.xml')
+wp_presentation_time_xml = join_paths(wl_protos_dir, 'stable', 'presentation-time', 'presentation-time.xml')
+wl_drm_syncobj_xml = join_paths(wl_protos_dir, 'staging', 'linux-drm-syncobj', 'linux-drm-syncobj-v1.xml')
 
 client_header = generator(prog_scanner,
     output : '@BASENAME@-client-protocol.h',
@@ -47,11 +57,18 @@ src = [
     wayland_eglstream_controller_protocol_c,
     wayland_eglstream_controller_client_protocol_h,
     wayland_drm_protocol_c,
+    wayland_drm_client_protocol_h,
     wayland_drm_server_protocol_h,
 ]
 
 src += client_header.process(wl_dmabuf_xml)
 src += code.process(wl_dmabuf_xml)
+
+src += client_header.process(wp_presentation_time_xml)
+src += code.process(wp_presentation_time_xml)
+
+src += client_header.process(wl_drm_syncobj_xml)
+src += code.process(wl_drm_syncobj_xml)
 
 egl_wayland = library('nvidia-egl-wayland',
     src,
@@ -61,6 +78,8 @@ egl_wayland = library('nvidia-egl-wayland',
         wayland_client,
         wayland_egl_backend,
         threads,
+        libdrm,
+        libdl,
     ],
     include_directories : inc,
     version : meson.project_version(),

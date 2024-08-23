@@ -1,3 +1,48 @@
+egl-wayland (1:1.1.15-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Thu, 15 Aug 2024 15:41:42 +0300
+
+egl-wayland (1:1.1.13-1) unstable; urgency=medium
+
+  * New upstream release.
+  * control: Migrate to pkgconf.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Thu, 15 Feb 2024 09:08:15 +0200
+
+egl-wayland (1:1.1.12-1) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Trim trailing whitespace.
+  * Bump debhelper from old 12 to 13.
+    + debian/rules: Drop --fail-missing argument to dh_missing, which is now the
+      default.
+  * Set upstream metadata fields: Bug-Database, Bug-Submit, Repository,
+    Repository-Browse.
+  * Use canonical URL in Vcs-Browser.
+  * Update standards version to 4.6.1, no changes needed.
+
+  [ Timo Aaltonen ]
+  * New upstream release.
+  * symbols: Updated.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Thu, 10 Aug 2023 10:58:33 +0300
+
+egl-wayland (1:1.1.11-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Mon, 19 Sep 2022 12:25:57 +0300
+
+egl-wayland (1:1.1.10-1) unstable; urgency=medium
+
+  * New upstream release.
+  * control: Add libdrm-dev to build-depends.
+  * symbols: Updated.
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Mon, 15 Aug 2022 16:22:44 +0300
+
 egl-wayland (1:1.1.9-1) unstable; urgency=medium
 
   * New upstream release.
